@@ -8,6 +8,7 @@ import { AgentResponse } from "@/components/results/AgentResponse";
 import { FacilityCard } from "@/components/results/FacilityCard";
 import { ListenButton } from "@/components/results/ListenButton";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
+import { HealthcareInsights } from "@/components/home/HealthcareInsights";
 import { ask } from "@/lib/api";
 import { useApp } from "@/components/providers/AppContext";
 import { haversineKm } from "@/lib/distance";
@@ -196,6 +197,9 @@ function HomePage() {
           />
         )}
       </div>
+
+      {/* Useful insights shown only before a search has produced results */}
+      {!data && !loading && <HealthcareInsights />}
 
       <section id="results" className="mt-10">
         {loading && <LoadingSkeleton />}

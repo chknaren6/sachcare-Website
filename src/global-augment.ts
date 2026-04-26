@@ -1,7 +1,4 @@
-import type {} from "../node_modules/@tanstack/start-client-core/dist/esm/serverRoute";
-
-declare global {
-  // Ambient marker; the import above loads TanStack's server route augmentation.
-}
-
+// Ambient marker file. Previously imported a TanStack internal module that no
+// longer exists in current versions; the augmentation is now provided by the
+// public @tanstack/react-start types.
 export {};
