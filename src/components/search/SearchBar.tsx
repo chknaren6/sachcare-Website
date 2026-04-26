@@ -121,8 +121,7 @@ export function SearchBar({
           <button
             type="button"
             onClick={onEmergency}
-            className="inline-flex items-center gap-1.5 rounded-full bg-coral px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-600 hover:shadow-md"
-            style={{ backgroundColor: "#dc2626" }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground shadow-sm transition-all hover:brightness-110 hover:shadow-md"
           >
             <Siren className="h-4 w-4" aria-hidden="true" />
             {sosLabel}

@@ -3,10 +3,11 @@ import { useApp } from "@/components/providers/AppContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 export function LocationBanner() {
-  const { locationGranted, bannerDismissed, dismissBanner, setUserLocation } = useApp();
+  const { locationGranted, bannerDismissed, dismissBanner, setUserLocation, userLat, userLon } = useApp();
   const { requestLocation, loading } = useGeolocation();
 
-  if (locationGranted || bannerDismissed) return null;
+  // Hide once we have coordinates OR the user dismissed the banner
+  if (locationGranted || (userLat !== null && userLon !== null) || bannerDismissed) return null;
 
   const onShare = async () => {
     const c = await requestLocation();
