@@ -16,7 +16,7 @@ import type { AskResponse } from "@/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { detectLanguage } from "@/lib/languageMap";
 import { t } from "@/i18n";
-import { detectLanguageByGoogle, translateFromEnglish, translateToEnglish } from "@/lib/translate";
+import { detectLanguageByGoogle, translateAskResponse, translateToEnglish } from "@/lib/translate";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -45,45 +45,26 @@ function HomePage() {
   const [query, setQuery] = useState("");
   const [pinCode, setPinCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [englishData, setEnglishData] = useState<AskResponse | null>(null);
   const [data, setData] = useState<AskResponse | null>(null);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
-  const [pipelineStep, setPipelineStep] = useState(-1);
-  const [translatedResponse, setTranslatedResponse] = useState("");
-  const [inputLanguage, setInputLanguage] = useState("en-IN");
   const [showFullResponse, setShowFullResponse] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const { effectiveLanguage, userLat, userLon, setSearchResults } = useApp();
   const copy = t(effectiveLanguage);
-
-  const pipeline = [
-    "Detecting language...",
-    "Translating...",
-    "Searching 10,000+ facilities...",
-    "Scoring trust...",
-    "Verifying externally...",
-    "Preparing response...",
-  ];
-
-  const runPipeline = () => {
-    setPipelineStep(0);
-    pipeline.forEach((_, idx) => {
-      setTimeout(() => setPipelineStep(idx), idx * 450);
-    });
-  };
 
   const handleSearch = async (override?: string) => {
     const q = (override ?? query).trim();
     if (!q) return;
     setQuery(q);
     setLoading(true);
+    setEnglishData(null);
     setData(null);
     setShowFullResponse(false);
     setSearchError(null);
-    runPipeline();
     try {
       const googleDetected = await detectLanguageByGoogle(q);
       const sourceLanguage = googleDetected ? `${googleDetected}-IN` : detectLanguage(q);
-      setInputLanguage(sourceLanguage);
       const queryInEnglish = await translateToEnglish(q, sourceLanguage);
       const res = await ask({
         query: queryInEnglish,
@@ -91,15 +72,12 @@ function HomePage() {
         lat: userLat,
         lon: userLon,
       });
-      setData(res);
+      setEnglishData(res);
       setSelectedFacilityId(res.facilities[0]?.id ?? null);
       setSearchResults(q, res.facilities);
-      const translated = await translateFromEnglish(res.response, sourceLanguage);
-      setTranslatedResponse(translated);
     } catch (error) {
       setSearchError(error instanceof Error ? error.message : "Search failed");
     } finally {
-      setPipelineStep(-1);
       setLoading(false);
     }
   };
@@ -108,28 +86,53 @@ function HomePage() {
     handleSearch("emergency ICU trauma near me");
   };
 
-  const handlePinSearch = () => {
+  const handlePinSearch = async () => {
     if (pinCode.length !== 6) return;
     const pinQuery = `facility near PIN ${pinCode}`;
     setLoading(true);
+    setEnglishData(null);
     setData(null);
     setSearchError(null);
-    ask({
-      query: pinQuery,
-      language: effectiveLanguage,
-    })
-      .then((res) => {
-        setData(res);
-        setSelectedFacilityId(res.facilities[0]?.id ?? null);
-        setSearchResults(pinQuery, res.facilities);
-        setInputLanguage("en-IN");
-        setTranslatedResponse(res.response);
-      })
-      .catch((error) => {
-        setSearchError(error instanceof Error ? error.message : "PIN search failed");
-      })
-      .finally(() => setLoading(false));
+    try {
+      const res = await ask({
+        query: pinQuery,
+        language: effectiveLanguage,
+      });
+      setEnglishData(res);
+      setSelectedFacilityId(res.facilities[0]?.id ?? null);
+      setSearchResults(pinQuery, res.facilities);
+    } catch (error) {
+      setSearchError(error instanceof Error ? error.message : "PIN search failed");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Whenever the upstream English response or the selected UI language changes,
+  // translate the *entire* response (narrative, thinking trace, facility names,
+  // sources, contradictions) so every visible string is in the chosen language.
+  useEffect(() => {
+    let cancelled = false;
+    if (!englishData) {
+      setData(null);
+      return;
+    }
+    if (effectiveLanguage.startsWith("en")) {
+      setData(englishData);
+      return;
+    }
+    setData(englishData);
+    translateAskResponse(englishData, effectiveLanguage)
+      .then((translated) => {
+        if (!cancelled) setData(translated);
+      })
+      .catch(() => {
+        if (!cancelled) setData(englishData);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [englishData, effectiveLanguage]);
 
   const facilitiesWithDistance = useMemo(() => {
     if (!data) return [];
@@ -141,16 +144,15 @@ function HomePage() {
   }, [data, userLat, userLon]);
 
   const conciseResponse = useMemo(() => {
-    const full = (translatedResponse || data?.response || "").trim();
+    const full = (data?.response ?? "").trim();
     if (!full) return "";
     const clean = full.replace(/\n{3,}/g, "\n\n");
     const parts = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
     if (parts.length <= 5) return clean;
     return `${parts.slice(0, 5).join(" ")}\n\n...`;
-  }, [translatedResponse, data]);
+  }, [data]);
 
   useEffect(() => {
-    // Smooth-scroll to results when they appear
     if (data) {
       const el = document.getElementById("results");
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -203,17 +205,6 @@ function HomePage() {
 
       <section id="results" className="mt-10">
         {loading && <LoadingSkeleton />}
-        {pipelineStep >= 0 && (
-          <div className="mb-5 rounded-xl border bg-surface p-4">
-            <ol className="space-y-2 text-sm">
-              {pipeline.slice(0, pipelineStep + 1).map((step) => (
-                <li key={step} className="text-muted-foreground">
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
         {searchError && (
           <div className="mb-5 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">
             {searchError}
@@ -235,27 +226,22 @@ function HomePage() {
                 />
               </Suspense>
               <div className="rounded-2xl border border-cyan-200 bg-surface p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-                <AgentResponse
-                  markdown={
-                    showFullResponse ? translatedResponse || data.response : conciseResponse
-                  }
-                />
+                <AgentResponse markdown={showFullResponse ? data.response : conciseResponse} />
                 <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
                   <ListenButton
-                    text={(translatedResponse || data.response).replace(/[#*_>`]/g, "")}
-                    lang={inputLanguage}
+                    text={data.response.replace(/[#*_>`]/g, "")}
+                    lang={effectiveLanguage}
                   />
                 </div>
-                {!showFullResponse &&
-                  conciseResponse !== (translatedResponse || data.response).trim() && (
-                    <button
-                      type="button"
-                      onClick={() => setShowFullResponse(true)}
-                      className="mt-3 text-sm font-medium text-cyan-500 underline"
-                    >
-                      Show full response
-                    </button>
-                  )}
+                {!showFullResponse && conciseResponse !== data.response.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullResponse(true)}
+                    className="mt-3 text-sm font-medium text-cyan-500 underline"
+                  >
+                    {copy.showFullResponse}
+                  </button>
+                )}
               </div>
             </div>
 

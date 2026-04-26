@@ -35,6 +35,15 @@ type Messages = {
   interfaceLanguage: string;
   madeForBharat: string;
   analysis: string;
+  sourcesLabel: string;
+  showFullResponse: string;
+  unknownLocation: string;
+  facilityTypes: {
+    hospital: string;
+    clinic: string;
+    diagnostic: string;
+    pharmacy: string;
+  };
 };
 
 const en: Messages = {
@@ -64,6 +73,15 @@ const en: Messages = {
   interfaceLanguage: "Interface language",
   madeForBharat: "Truth in healthcare · Made for Bharat",
   analysis: "Analysis",
+  sourcesLabel: "Sources",
+  showFullResponse: "Show full response",
+  unknownLocation: "Location unavailable",
+  facilityTypes: {
+    hospital: "Hospital",
+    clinic: "Clinic",
+    diagnostic: "Diagnostic",
+    pharmacy: "Pharmacy",
+  },
 };
 
 const hi: Messages = {
@@ -94,6 +112,15 @@ const hi: Messages = {
   interfaceLanguage: "इंटरफेस भाषा",
   madeForBharat: "स्वास्थ्य में भरोसा · भारत के लिए",
   analysis: "विश्लेषण",
+  sourcesLabel: "स्रोत",
+  showFullResponse: "पूरा उत्तर दिखाएं",
+  unknownLocation: "स्थान उपलब्ध नहीं",
+  facilityTypes: {
+    hospital: "अस्पताल",
+    clinic: "क्लिनिक",
+    diagnostic: "डायग्नोस्टिक",
+    pharmacy: "फार्मेसी",
+  },
 };
 
 const bn: Messages = {
