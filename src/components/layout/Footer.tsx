@@ -2,38 +2,35 @@ import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-cyan-200 bg-surface dark:border-slate-800 dark:bg-slate-900/60">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2">
-        <div>
-          <div className="font-heading text-lg font-bold text-cyan-400">SachCare</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Truth in healthcare for 1.4 Billion Indians.
-          </p>
-          <p className="mt-3 text-sm">Made for Bharat 🇮🇳</p>
+    <footer className="mt-12 border-t border-border bg-surface/60 backdrop-blur-sm dark:bg-slate-900/40">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-sm sm:flex-row sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className="font-heading font-semibold text-primary">SachCare</span>
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            Truth in healthcare · Made for Bharat 🇮🇳
+          </span>
         </div>
-        <nav className="flex flex-col gap-2 text-sm" aria-label="Footer">
-          <Link to="/" className="text-muted-foreground transition-colors hover:text-cyan-400">
+
+        <nav className="flex items-center gap-4 text-xs" aria-label="Footer">
+          <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
             Home
           </Link>
-          <Link to="/map" className="text-muted-foreground transition-colors hover:text-cyan-400">
-            Trust Map
+          <Link to="/map" className="text-muted-foreground transition-colors hover:text-primary">
+            Map
           </Link>
-          <Link
-            to="/deserts"
-            className="text-muted-foreground transition-colors hover:text-cyan-400"
-          >
-            Desert Analysis
+          <Link to="/deserts" className="text-muted-foreground transition-colors hover:text-primary">
+            Analysis
           </Link>
-          <Link
-            to="/how-it-works"
-            className="text-muted-foreground transition-colors hover:text-cyan-400"
-          >
-            How It Works
+          <Link to="/how-it-works" className="text-muted-foreground transition-colors hover:text-primary">
+            How it works
           </Link>
         </nav>
-      </div>
-      <div className="border-t border-cyan-200 py-4 text-center text-xs text-muted-foreground dark:border-slate-800">
-        © 2026 SachCare. Open source. MIT License.
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-success" />
+          Operational
+          <span className="hidden sm:inline">· © 2026</span>
+        </div>
       </div>
     </footer>
   );

@@ -20,6 +20,7 @@ interface AppState {
   userLat: number | null;
   userLon: number | null;
   locationConsentGiven: boolean;
+  locationGranted: boolean;
   setUserLocation: (lat: number, lon: number) => void;
   setLocationConsentGiven: (v: boolean) => void;
 
@@ -141,6 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userLat,
       userLon,
       locationConsentGiven,
+      locationGranted: userLat !== null && userLon !== null,
       setUserLocation,
       setLocationConsentGiven: setLocationConsent,
       lastQuery,

@@ -20,8 +20,8 @@ export function MicButton({ isListening, isSupported, onStart, onStop }: Props) 
       disabled={!isSupported}
       onClick={isListening ? onStop : onStart}
       aria-label={isListening ? "Stop recording" : "Start voice input"}
-      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-cyan-300/50 disabled:cursor-not-allowed disabled:opacity-50 ${
-        isListening ? "bg-danger animate-pulse-ring" : "bg-cyan-400 hover:bg-cyan-300"
+      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+        isListening ? "bg-destructive animate-pulse-ring" : "bg-primary hover:brightness-110"
       }`}
     >
       {isListening ? (
