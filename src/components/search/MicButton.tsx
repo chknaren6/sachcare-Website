@@ -1,0 +1,43 @@
+import { Mic, MicOff } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface Props {
+  isListening: boolean;
+  isSupported: boolean;
+  onStart: () => void;
+  onStop: () => void;
+}
+
+export function MicButton({ isListening, isSupported, onStart, onStop }: Props) {
+  const button = (
+    <button
+      type="button"
+      disabled={!isSupported}
+      onClick={isListening ? onStop : onStart}
+      aria-label={isListening ? "Stop recording" : "Start voice input"}
+      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full text-white shadow-md transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-cyan-300/50 disabled:cursor-not-allowed disabled:opacity-50 ${
+        isListening ? "bg-danger animate-pulse-ring" : "bg-cyan-400 hover:bg-cyan-300"
+      }`}
+    >
+      {isListening ? (
+        <MicOff className="h-5 w-5" aria-hidden="true" />
+      ) : (
+        <Mic className="h-5 w-5" aria-hidden="true" />
+      )}
+    </button>
+  );
+  if (isSupported) return button;
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent>Voice input not supported in this browser. Try Chrome.</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
