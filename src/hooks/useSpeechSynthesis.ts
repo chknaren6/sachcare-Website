@@ -93,6 +93,11 @@ export function useSpeechSynthesis() {
       if (!cleaned) return;
       setError(null);
 
+      // Chrome/Edge bug: speak() called too soon after cancel() silently drops
+      // the utterance. Wait one tick for the engine to flush.
+      await new Promise((r) => window.setTimeout(r, 60));
+      if (speakingRunRef.current !== runId) return;
+
       const availableVoices = await waitForVoices(synth);
       if (availableVoices.length > 0 && voices.length === 0) setVoices(availableVoices);
       const speechLanguages = getSpeechLanguages(langCode);
@@ -134,7 +139,13 @@ export function useSpeechSynthesis() {
         };
         u.onerror = (ev) => {
           if (ev.error === "interrupted" || ev.error === "canceled") return;
-          setError("Speech output failed. Please try again.");
+          // "not-allowed" happens when speak() is called before any user
+          // gesture on Safari — surface a clearer message.
+          if (ev.error === "not-allowed") {
+            setError("Tap the Listen button again to enable audio.");
+          } else {
+            setError("Speech output failed. Please try again.");
+          }
           setIsSpeaking(false);
         };
         synth.resume();
@@ -142,7 +153,7 @@ export function useSpeechSynthesis() {
       };
 
       setIsSpeaking(true);
-      window.setTimeout(speakNext, 0);
+      speakNext();
     },
     [voices],
   );
