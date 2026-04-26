@@ -1,4 +1,3 @@
-import type {} from "@tanstack/start-client-core/dist/esm/serverRoute.js";
 import { createFileRoute } from "@tanstack/react-router";
 import { buildAskMock } from "@/lib/mockData";
 

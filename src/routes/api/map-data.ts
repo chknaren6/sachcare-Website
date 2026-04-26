@@ -1,4 +1,3 @@
-import "@tanstack/start-client-core";
 import { createFileRoute } from "@tanstack/react-router";
 import { buildMapFacilities } from "@/lib/mockData";
 
