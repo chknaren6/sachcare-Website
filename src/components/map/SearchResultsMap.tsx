@@ -72,7 +72,7 @@ export function SearchResultsMap({ facilities, userLat, userLon, selectedId, onS
   }
 
   return (
-    <div className="h-72 w-full min-w-0 overflow-hidden rounded-2xl border md:h-[480px]">
+    <div className="relative z-0 h-72 w-full min-w-0 overflow-hidden rounded-2xl border md:h-[480px]">
       <MapContainer center={center} zoom={10} scrollWheelZoom className="h-full w-full">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

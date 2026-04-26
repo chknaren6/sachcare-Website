@@ -13,7 +13,11 @@ type DetectResponse = {
   };
 };
 
-export async function translateText(text: string, target: string, source?: string): Promise<string> {
+export async function translateText(
+  text: string,
+  target: string,
+  source?: string,
+): Promise<string> {
   const apiKey = import.meta.env.NEXT_PUBLIC_GOOGLE_TRANSLATE_KEY;
   if (!apiKey || !text.trim()) return text;
 

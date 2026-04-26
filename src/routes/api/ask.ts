@@ -60,6 +60,10 @@ export const Route = createFileRoute("/api/ask")({
           const json = (await upstreamRes.json()) as {
             request_id?: string;
             query?: string;
+            summary?: string;
+            thinking?: string;
+            resolved_location?: { lat?: number; lon?: number; pin?: string };
+            keywords_used?: string[];
             reasoning?: string;
             response?: string;
             llm_raw?: unknown;
@@ -88,7 +92,6 @@ export const Route = createFileRoute("/api/ask")({
               key_citation?: string;
               distance_km?: number;
             }>;
-            thinking?: unknown[];
             traceId?: string;
             searchTime?: number;
           };
@@ -100,39 +103,80 @@ export const Route = createFileRoute("/api/ask")({
               if (lat === null || lon === null) return null;
               return {
                 id: f.id ?? f.facility_id ?? `${idx}-${lat}-${lon}`,
-            name: f.name ?? f.facility_name ?? "Unknown Facility",
-            type: "hospital" as const,
-            state: f.state ?? "Unknown",
-            city: f.city ?? f.location ?? "Unknown",
+                name: f.name ?? f.facility_name ?? "Unknown Facility",
+                type: "hospital" as const,
+                state: f.state ?? "Unknown",
+                city: f.city ?? f.location ?? "Unknown",
                 lat,
                 lon,
-            phone: f.phone ?? "N/A",
-            trustScore: Math.round(f.trustScore ?? f.trust_score ?? 0),
-            contradictions: (f.contradictions ?? []).map((c) => ({
-              text: c.claim ?? c.cited_text ?? "Potential inconsistency reported",
-              source: f.key_citation ?? "Databricks",
-              severity:
-                c.severity === "high" || c.severity === "medium" || c.severity === "low"
-                  ? c.severity
-                  : "low",
-            })),
-            sources: f.key_citation ? [f.key_citation] : ["Databricks"],
-            distance: f.distance_km,
+                phone: f.phone ?? "N/A",
+                trustScore: Math.round(f.trustScore ?? f.trust_score ?? 0),
+                contradictions: (f.contradictions ?? []).map((c) => ({
+                  text: c.claim ?? c.cited_text ?? "Potential inconsistency reported",
+                  source: f.key_citation ?? "Databricks",
+                  severity:
+                    c.severity === "high" || c.severity === "medium" || c.severity === "low"
+                      ? c.severity
+                      : "low",
+                })),
+                sources: f.key_citation ? [f.key_citation] : ["Databricks"],
+                distance: f.distance_km,
               };
             })
             .filter((f): f is NonNullable<typeof f> => f !== null);
 
-          return Response.json({
-            response: json.reasoning ?? json.response ?? "",
-            thinking: Array.isArray(json.thinking) && json.thinking.length > 0
+          const thinkingSteps =
+            typeof json.thinking === "string" && json.thinking.trim()
               ? json.thinking
-              : [
-                  { step: 1, title: "Query parsed", detail: "Language and intent extracted", duration: 180 },
-                  { step: 2, title: "State identified as Bihar", detail: "Location clues resolved", duration: 240 },
-                  { step: 3, title: "Searching records", detail: "Matching facilities and citations", duration: 350 },
-                  { step: 4, title: "3 contradictions found", detail: "Conflict checks completed", duration: 290 },
-                  { step: 5, title: "Trust score calculated", detail: "Risk-weighted score generated", duration: 160 },
-                ],
+                  .split(/\n+/)
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .slice(0, 8)
+                  .map((line, idx) => ({
+                    step: idx + 1,
+                    title: `Step ${idx + 1}`,
+                    detail: line,
+                    duration: 120 + idx * 40,
+                  }))
+              : [];
+
+          return Response.json({
+            response: json.summary ?? json.reasoning ?? json.response ?? "",
+            thinking:
+              thinkingSteps.length > 0
+                ? thinkingSteps
+                : [
+                    {
+                      step: 1,
+                      title: "Query parsed",
+                      detail: "Language and intent extracted",
+                      duration: 180,
+                    },
+                    {
+                      step: 2,
+                      title: "State identified as Bihar",
+                      detail: "Location clues resolved",
+                      duration: 240,
+                    },
+                    {
+                      step: 3,
+                      title: "Searching records",
+                      detail: "Matching facilities and citations",
+                      duration: 350,
+                    },
+                    {
+                      step: 4,
+                      title: "3 contradictions found",
+                      detail: "Conflict checks completed",
+                      duration: 290,
+                    },
+                    {
+                      step: 5,
+                      title: "Trust score calculated",
+                      detail: "Risk-weighted score generated",
+                      duration: 160,
+                    },
+                  ],
             facilities: normalizedFacilities,
             queryLanguage: (body.language ?? "en-IN").toString(),
             traceId: json.request_id ?? json.traceId ?? crypto.randomUUID(),
@@ -140,10 +184,15 @@ export const Route = createFileRoute("/api/ask")({
             model: json.model,
             usage: json.usage,
             llmRaw: json.llm_raw,
+            resolvedLocation: json.resolved_location,
+            keywordsUsed: json.keywords_used ?? [],
           });
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unknown error";
-          return Response.json({ error: "Failed to process ask request", details: message }, { status: 500 });
+          return Response.json(
+            { error: "Failed to process ask request", details: message },
+            { status: 500 },
+          );
         }
       },
     },

@@ -25,8 +25,7 @@ interface Props {
 }
 
 export function TrustBadge({ score, size = "md", animate = false }: Props) {
-  const tier =
-    score >= 70 ? "high" : score >= 40 ? "med" : "low";
+  const tier = score >= 70 ? "high" : score >= 40 ? "med" : "low";
   const styles =
     tier === "high"
       ? "bg-success/15 text-success border-success/40"
@@ -34,8 +33,7 @@ export function TrustBadge({ score, size = "md", animate = false }: Props) {
         ? "bg-warning/15 text-warning border-warning/40"
         : "bg-danger/15 text-danger border-danger/40";
   const icon = tier === "high" ? "✓" : tier === "med" ? "!" : "⚠";
-  const sizing =
-    size === "sm" ? "text-xs px-2 py-0.5" : "text-sm px-2.5 py-1";
+  const sizing = size === "sm" ? "text-xs px-2 py-0.5" : "text-sm px-2.5 py-1";
 
   return (
     <motion.span

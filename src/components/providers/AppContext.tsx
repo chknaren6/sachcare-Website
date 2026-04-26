@@ -68,7 +68,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setLocationConsentGiven(consent);
       if (sessionStorage.getItem("sc_banner_dismissed") === "1") setBannerDismissed(true);
       const savedUiLanguage = localStorage.getItem("sc_ui_lang") as UiLanguage | null;
-      if (savedUiLanguage) setUiLanguageState(savedUiLanguage);
+      if (savedUiLanguage) {
+        setUiLanguageState(savedUiLanguage);
+        document.documentElement.lang = savedUiLanguage;
+      }
       const t = (localStorage.getItem("sc_theme") as "light" | "dark" | null) ?? "light";
       setTheme(t);
       document.documentElement.classList.toggle("dark", t === "dark");
@@ -100,6 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUiLanguageState(lang);
     try {
       localStorage.setItem("sc_ui_lang", lang);
+      document.documentElement.lang = lang;
     } catch {
       /* noop */
     }

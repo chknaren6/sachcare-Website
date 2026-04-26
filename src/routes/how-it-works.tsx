@@ -52,13 +52,7 @@ const STEPS = [
 
 const SPONSORS = ["Databricks", "Tavily", "Vercel", "Next.js", "Leaflet", "shadcn/ui"];
 
-function StepCard({
-  step,
-  index,
-}: {
-  step: (typeof STEPS)[number];
-  index: number;
-}) {
+function StepCard({ step, index }: { step: (typeof STEPS)[number]; index: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.4 });
   const left = index % 2 === 0;

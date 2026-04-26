@@ -31,10 +31,7 @@ export function LanguageMarquee() {
 
       <div className="marquee-track gap-8 px-4 will-change-transform">
         {items.map((l, i) => (
-          <span
-            key={`${l.name}-${i}`}
-            className="flex shrink-0 items-center gap-2 text-sm"
-          >
+          <span key={`${l.name}-${i}`} className="flex shrink-0 items-center gap-2 text-sm">
             <span className="font-medium text-foreground">{l.native}</span>
             <span className="text-xs text-muted-foreground">· {l.name}</span>
           </span>

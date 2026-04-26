@@ -1,4 +1,5 @@
 import { Globe } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,12 +9,23 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useApp } from "@/components/providers/AppContext";
-import { UI_LANGUAGES } from "@/i18n";
+import { t, UI_LANGUAGES } from "@/i18n";
 
 export function LanguageSwitcher() {
   const { uiLanguage, setUiLanguage } = useApp();
+  const [open, setOpen] = useState(false);
+  const copy = t(uiLanguage);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("sc_ui_lang")) setOpen(true);
+    } catch {
+      setOpen(true);
+    }
+  }, []);
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 dark:hover:bg-slate-800"
         aria-label="Change interface language"
@@ -21,12 +33,15 @@ export function LanguageSwitcher() {
         <Globe className="h-4.5 w-4.5" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Interface language</DropdownMenuLabel>
+        <DropdownMenuLabel>{copy.interfaceLanguage}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {UI_LANGUAGES.map((l) => (
           <DropdownMenuItem
             key={l.code}
-            onSelect={() => setUiLanguage(l.code)}
+            onSelect={() => {
+              setUiLanguage(l.code);
+              setOpen(false);
+            }}
             className={uiLanguage === l.code ? "bg-cyan-100 dark:bg-slate-800" : ""}
           >
             <span className="font-medium">{l.label}</span>

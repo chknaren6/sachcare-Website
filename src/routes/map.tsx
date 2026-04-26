@@ -41,14 +41,13 @@ function MapPage() {
       .catch(() => setData([]));
   }, []);
 
-  const states = useMemo(
-    () => Array.from(new Set(data.map((d) => d.state))).sort(),
-    [data],
-  );
+  const states = useMemo(() => Array.from(new Set(data.map((d) => d.state))).sort(), [data]);
   const filtered = useMemo(
     () =>
       data.filter(
         (f) =>
+          Number.isFinite(f.lat) &&
+          Number.isFinite(f.lon) &&
           f.trustScore >= minTrust &&
           (stateFilter === "all" || f.state === stateFilter),
       ),
@@ -60,9 +59,8 @@ function MapPage() {
     filtered.forEach((f) => {
       (byState[f.state] ??= []).push(f.trustScore);
     });
-    return Object.values(byState).filter(
-      (arr) => arr.reduce((a, b) => a + b, 0) / arr.length < 40,
-    ).length;
+    return Object.values(byState).filter((arr) => arr.reduce((a, b) => a + b, 0) / arr.length < 40)
+      .length;
   }, [filtered]);
 
   return (
@@ -74,15 +72,11 @@ function MapPage() {
     >
       <aside className="w-full shrink-0 border-b border-cyan-200 bg-surface/90 p-5 backdrop-blur-md md:w-72 md:border-b-0 md:border-r dark:border-slate-800 dark:bg-slate-900/80">
         <h2 className="font-heading text-xl font-bold text-foreground">Trust Map</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Filter facilities across India.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Filter facilities across India.</p>
 
         <div className="mt-5 space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-foreground">
-              State
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-foreground">State</label>
             <Select value={stateFilter} onValueChange={setStateFilter}>
               <SelectTrigger className="bg-cyan-50 dark:bg-slate-800">
                 <SelectValue />
@@ -100,9 +94,7 @@ function MapPage() {
 
           <div>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-foreground">
-                Min Trust
-              </label>
+              <label className="text-xs font-semibold text-foreground">Min Trust</label>
               <span className="text-xs font-bold text-cyan-400">{minTrust}</span>
             </div>
             <Slider
@@ -116,9 +108,7 @@ function MapPage() {
           </div>
 
           <label className="flex items-center justify-between rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
-            <span className="text-sm font-medium text-foreground">
-              Show Medical Deserts
-            </span>
+            <span className="text-sm font-medium text-foreground">Show Medical Deserts</span>
             <Switch checked={showDeserts} onCheckedChange={setShowDeserts} />
           </label>
 

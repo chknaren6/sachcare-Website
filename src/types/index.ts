@@ -37,6 +37,12 @@ export interface AskResponse {
   queryLanguage: string;
   traceId: string;
   searchTime: number;
+  resolvedLocation?: {
+    lat?: number;
+    lon?: number;
+    pin?: string;
+  };
+  keywordsUsed?: string[];
   model?: string;
   usage?: {
     prompt_tokens?: number;

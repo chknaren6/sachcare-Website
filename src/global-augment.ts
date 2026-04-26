@@ -1,7 +1,7 @@
-/// <reference path="../node_modules/@tanstack/start-client-core/dist/esm/serverRoute.d.ts" />
+import type {} from "../node_modules/@tanstack/start-client-core/dist/esm/serverRoute";
 
 declare global {
-  // Ambient marker — augmentation is loaded via the reference above.
+  // Ambient marker; the import above loads TanStack's server route augmentation.
 }
 
 export {};

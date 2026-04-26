@@ -1,50 +1,159 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function getSpeechSynthesis() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  return window.speechSynthesis;
+}
+
+function splitForSpeech(text: string) {
+  const sentences = text.match(/[^.!?\n]+[.!?]?/g) ?? [text];
+  const chunks: string[] = [];
+  for (const sentence of sentences) {
+    const clean = sentence.trim();
+    if (!clean) continue;
+    for (let i = 0; i < clean.length; i += 180) {
+      chunks.push(clean.slice(i, i + 180));
+    }
+  }
+  return chunks.length > 0 ? chunks : [text];
+}
+
+function getSpeechLanguages(langCode: string) {
+  const base = langCode.split("-")[0] || "en";
+  const variants: Record<string, string[]> = {
+    en: ["en-IN", "en-US", "en-GB"],
+    hi: ["hi-IN", "hi", "en-IN", "en-US"],
+    bn: ["bn-IN", "bn", "en-IN"],
+    te: ["te-IN", "te", "en-IN"],
+    ta: ["ta-IN", "ta", "en-IN"],
+    mr: ["mr-IN", "mr", "hi-IN", "hi", "en-IN"],
+    gu: ["gu-IN", "gu", "hi-IN", "hi", "en-IN"],
+    kn: ["kn-IN", "kn", "en-IN"],
+    ml: ["ml-IN", "ml", "en-IN"],
+  };
+  return Array.from(new Set([langCode, ...(variants[base] ?? []), "en-IN", "en-US"]));
+}
+
+function waitForVoices(synth: SpeechSynthesis, timeoutMs = 1200) {
+  const current = synth.getVoices();
+  if (current.length > 0) return Promise.resolve(current);
+
+  return new Promise<SpeechSynthesisVoice[]>((resolve) => {
+    let settled = false;
+    const previousHandler = synth.onvoiceschanged;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      synth.removeEventListener?.("voiceschanged", finish);
+      synth.onvoiceschanged = previousHandler;
+      resolve(synth.getVoices());
+    };
+    const timer = window.setTimeout(finish, timeoutMs);
+    synth.addEventListener?.("voiceschanged", finish);
+    synth.onvoiceschanged = finish;
+  });
+}
 
 export function useSpeechSynthesis() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isSupported, setIsSupported] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const speakingRunRef = useRef(0);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const synth = getSpeechSynthesis();
+    if (!synth) return;
     setIsSupported(true);
-    const load = () => setVoices(window.speechSynthesis.getVoices());
+    const load = () => setVoices(synth.getVoices());
     load();
-    window.speechSynthesis.onvoiceschanged = load;
+    const retry = window.setTimeout(load, 250);
+    synth.addEventListener?.("voiceschanged", load);
+    synth.onvoiceschanged = load;
     return () => {
-      window.speechSynthesis.onvoiceschanged = null;
+      window.clearTimeout(retry);
+      synth.removeEventListener?.("voiceschanged", load);
+      synth.onvoiceschanged = null;
+      synth.cancel();
     };
   }, []);
 
-  const speak = (text: string, langCode: string) => {
-    if (!isSupported) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    const langPrefix = langCode.split("-")[0];
-    const match =
-      voices.find((v) => v.lang === langCode) ??
-      voices.find((v) => v.lang.startsWith(langPrefix)) ??
-      voices[0];
-    if (match) {
-      u.voice = match;
-      u.lang = match.lang;
-    } else {
-      u.lang = langCode.startsWith("en") ? "en-US" : langCode;
-    }
-    u.rate = 0.95;
-    u.pitch = 1;
-    u.volume = 1;
-    u.onend = () => setIsSpeaking(false);
-    u.onerror = () => setIsSpeaking(false);
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(u);
-  };
+  const speak = useCallback(
+    async (text: string, langCode: string) => {
+      const synth = getSpeechSynthesis();
+      if (!synth) {
+        setError("Speech output is not supported in this browser.");
+        return;
+      }
+      const runId = speakingRunRef.current + 1;
+      speakingRunRef.current = runId;
+      synth.cancel();
+      const cleaned = text.trim();
+      if (!cleaned) return;
+      setError(null);
 
-  const stop = () => {
-    if (!isSupported) return;
-    window.speechSynthesis.cancel();
+      const availableVoices = await waitForVoices(synth);
+      if (availableVoices.length > 0 && voices.length === 0) setVoices(availableVoices);
+      const speechLanguages = getSpeechLanguages(langCode);
+      const langPrefix = speechLanguages[0].split("-")[0];
+      const match =
+        speechLanguages
+          .map((speechLang) => availableVoices.find((v) => v.lang === speechLang))
+          .find(Boolean) ??
+        availableVoices.find((v) => v.lang.startsWith(langPrefix)) ??
+        speechLanguages
+          .map((speechLang) => voices.find((v) => v.lang === speechLang))
+          .find(Boolean) ??
+        voices.find((v) => v.lang.startsWith(langPrefix)) ??
+        availableVoices[0] ??
+        voices[0];
+
+      const chunks = splitForSpeech(cleaned);
+      let idx = 0;
+
+      const speakNext = () => {
+        if (speakingRunRef.current !== runId) return;
+        if (idx >= chunks.length) {
+          setIsSpeaking(false);
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(chunks[idx].trim());
+        if (match) {
+          u.voice = match;
+          u.lang = match.lang;
+        } else {
+          u.lang = speechLanguages[0];
+        }
+        u.rate = 0.95;
+        u.pitch = 1;
+        u.volume = 1;
+        u.onend = () => {
+          idx += 1;
+          speakNext();
+        };
+        u.onerror = (ev) => {
+          if (ev.error === "interrupted" || ev.error === "canceled") return;
+          setError("Speech output failed. Please try again.");
+          setIsSpeaking(false);
+        };
+        synth.resume();
+        synth.speak(u);
+      };
+
+      setIsSpeaking(true);
+      window.setTimeout(speakNext, 0);
+    },
+    [voices],
+  );
+
+  const stop = useCallback(() => {
+    const synth = getSpeechSynthesis();
+    if (!synth) return;
+    speakingRunRef.current += 1;
+    synth.cancel();
     setIsSpeaking(false);
-  };
+  }, []);
 
-  return { speak, stop, isSpeaking, voices, isSupported };
+  return { speak, stop, isSpeaking, voices, isSupported, error };
 }

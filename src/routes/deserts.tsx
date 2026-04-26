@@ -13,14 +13,19 @@ export const Route = createFileRoute("/deserts")({
       { title: "Desert Analysis — SachCare" },
       {
         name: "description",
-        content:
-          "State-by-state breakdown of medical deserts and trust deficits across India.",
+        content: "State-by-state breakdown of medical deserts and trust deficits across India.",
       },
     ],
   }),
 });
 
 type SortKey = keyof StateAnalysis;
+const RISK_RANK: Record<StateAnalysis["riskLevel"], number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
 
 const RISK_COLOR: Record<StateAnalysis["riskLevel"], string> = {
   CRITICAL: "bg-danger/15 text-danger border-danger/40",
@@ -31,8 +36,8 @@ const RISK_COLOR: Record<StateAnalysis["riskLevel"], string> = {
 
 function DesertsPage() {
   const [data, setData] = useState<DesertAnalysisResponse | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("avgTrust");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("riskLevel");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     fetchDesertAnalysis()
@@ -44,6 +49,11 @@ function DesertsPage() {
     ? [...data.states].sort((a, b) => {
         const av = a[sortKey];
         const bv = b[sortKey];
+        if (sortKey === "riskLevel") {
+          return sortDir === "asc"
+            ? RISK_RANK[a.riskLevel] - RISK_RANK[b.riskLevel]
+            : RISK_RANK[b.riskLevel] - RISK_RANK[a.riskLevel];
+        }
         if (typeof av === "number" && typeof bv === "number") {
           return sortDir === "asc" ? av - bv : bv - av;
         }
@@ -54,14 +64,16 @@ function DesertsPage() {
     : [];
 
   const top10 = data
-    ? [...data.states].sort((a, b) => a.avgTrust - b.avgTrust).slice(0, 10)
+    ? [...data.states]
+        .sort((a, b) => RISK_RANK[b.riskLevel] - RISK_RANK[a.riskLevel] || a.avgTrust - b.avgTrust)
+        .slice(0, 10)
     : [];
 
   const setSort = (k: SortKey) => {
     if (k === sortKey) setSortDir(sortDir === "asc" ? "desc" : "asc");
     else {
       setSortKey(k);
-      setSortDir("asc");
+      setSortDir(k === "riskLevel" ? "desc" : "asc");
     }
   };
 
@@ -74,8 +86,8 @@ function DesertsPage() {
     >
       <h1 className="font-heading text-3xl font-bold sm:text-4xl">Medical Desert Analysis</h1>
       <p className="mt-2 max-w-2xl text-muted-foreground">
-        State-by-state trust deficits across 12,847 healthcare facilities, sampled
-        from government registries and verified via live web search.
+        State-by-state trust deficits across 12,847 healthcare facilities, sampled from government
+        registries and verified via live web search.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -186,8 +198,7 @@ function DesertsPage() {
                         className="h-full rounded-full"
                         style={{
                           width: `${pct}%`,
-                          background:
-                            "linear-gradient(90deg,#4DD0E1,#F59E0B 60%,#EF4444)",
+                          background: "linear-gradient(90deg,#4DD0E1,#F59E0B 60%,#EF4444)",
                         }}
                       />
                     </div>
@@ -202,10 +213,7 @@ function DesertsPage() {
             <ul className="mt-3 space-y-2 text-sm text-foreground">
               <li>• North-East states show the largest trust deficits (avg below 40).</li>
               <li>• Kerala, Tamil Nadu, and Delhi lead with avg trust above 80.</li>
-              <li>
-                • Bihar and UP combined account for ~28% of all detected
-                contradictions.
-              </li>
+              <li>• Bihar and UP combined account for ~28% of all detected contradictions.</li>
             </ul>
           </div>
         </div>

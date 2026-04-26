@@ -56,7 +56,7 @@ export function FacilityCard({ facility, traceId }: Props) {
         <ContradictionAlert items={facility.contradictions} />
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-cyan-200/70 pt-3 text-xs dark:border-slate-700">
+      <div className="relative z-20 mt-4 flex items-center justify-between border-t border-cyan-200/70 pt-3 text-xs dark:border-slate-700">
         <span className="text-muted-foreground">
           Sources: {facility.sources.slice(0, 2).join(", ")}
           {facility.sources.length > 2 ? "…" : ""}
@@ -77,7 +77,10 @@ export function FacilityCard({ facility, traceId }: Props) {
             onClick={() => {
               const key = "sc_reports";
               const current = JSON.parse(localStorage.getItem(key) ?? "[]") as unknown[];
-              localStorage.setItem(key, JSON.stringify([...current, { facility: facility.id, at: Date.now() }]));
+              localStorage.setItem(
+                key,
+                JSON.stringify([...current, { facility: facility.id, at: Date.now() }]),
+              );
             }}
             className="rounded-md border px-2 py-1"
           >

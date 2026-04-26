@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ExampleChips } from "@/components/search/ExampleChips";
 import { AgentThinkingCard } from "@/components/common/AgentThinkingCard";
@@ -37,11 +36,9 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
-};
-const SearchResultsMap = lazy(() => import("@/components/map/SearchResultsMap").then((m) => ({ default: m.SearchResultsMap })));
+const SearchResultsMap = lazy(() =>
+  import("@/components/map/SearchResultsMap").then((m) => ({ default: m.SearchResultsMap })),
+);
 
 function HomePage() {
   const [query, setQuery] = useState("");
@@ -51,6 +48,7 @@ function HomePage() {
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [pipelineStep, setPipelineStep] = useState(-1);
   const [translatedResponse, setTranslatedResponse] = useState("");
+  const [inputLanguage, setInputLanguage] = useState("en-IN");
   const [showFullResponse, setShowFullResponse] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const { effectiveLanguage, userLat, userLon, setSearchResults } = useApp();
@@ -72,13 +70,6 @@ function HomePage() {
     });
   };
 
-  const pinCenters: Record<string, { lat: number; lon: number }> = {
-    "800001": { lat: 25.5941, lon: 85.1376 },
-    "110001": { lat: 28.6139, lon: 77.209 },
-    "560001": { lat: 12.9716, lon: 77.5946 },
-    "400001": { lat: 18.9388, lon: 72.8354 },
-  };
-
   const handleSearch = async (override?: string) => {
     const q = (override ?? query).trim();
     if (!q) return;
@@ -91,6 +82,7 @@ function HomePage() {
     try {
       const googleDetected = await detectLanguageByGoogle(q);
       const sourceLanguage = googleDetected ? `${googleDetected}-IN` : detectLanguage(q);
+      setInputLanguage(sourceLanguage);
       const queryInEnglish = await translateToEnglish(q, sourceLanguage);
       const res = await ask({
         query: queryInEnglish,
@@ -117,20 +109,25 @@ function HomePage() {
 
   const handlePinSearch = () => {
     if (pinCode.length !== 6) return;
-    const center = pinCenters[pinCode];
-    if (center) {
-      ask({
-        query: `facility near PIN ${pinCode}`,
-        language: effectiveLanguage,
-        lat: center.lat,
-        lon: center.lon,
-      }).then((res) => {
+    const pinQuery = `facility near PIN ${pinCode}`;
+    setLoading(true);
+    setData(null);
+    setSearchError(null);
+    ask({
+      query: pinQuery,
+      language: effectiveLanguage,
+    })
+      .then((res) => {
         setData(res);
         setSelectedFacilityId(res.facilities[0]?.id ?? null);
-      });
-      return;
-    }
-    handleSearch(`facility near PIN ${pinCode}`);
+        setSearchResults(pinQuery, res.facilities);
+        setInputLanguage("en-IN");
+        setTranslatedResponse(res.response);
+      })
+      .catch((error) => {
+        setSearchError(error instanceof Error ? error.message : "PIN search failed");
+      })
+      .finally(() => setLoading(false));
   };
 
   const facilitiesWithDistance = useMemo(() => {
@@ -160,29 +157,23 @@ function HomePage() {
   }, [data]);
 
   return (
-    <motion.main
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="mx-auto max-w-6xl overflow-x-hidden px-4 pb-16 pt-10 sm:px-6 sm:pt-16"
-    >
+    <main className="mx-auto max-w-6xl overflow-x-hidden px-4 pb-16 pt-10 sm:px-6 sm:pt-16">
       <LocationBanner />
       <LocationConsentModal />
 
       <h1 className="font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl md:text-5xl">
-        Truth in healthcare for{" "}
-        <span className="text-cyan-400">1.4 Billion Indians</span>
+        {copy.appTagline.includes(copy.heroHighlight)
+          ? copy.appTagline.split(copy.heroHighlight)[0]
+          : copy.appTagline}{" "}
+        <span className="text-cyan-400">{copy.heroHighlight}</span>
       </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground sm:text-lg">
-        Ask in any Indian language. Get verified facilities, trust scores, and
-        contradiction alerts — backed by Databricks, Tavily and government data.
-      </p>
+      <p className="mt-3 max-w-2xl text-muted-foreground sm:text-lg">{copy.heroSubtitle}</p>
 
       <div className="mt-10">
         <SearchBar
           value={query}
           onChange={setQuery}
-          onSubmit={() => handleSearch()}
+          onSubmit={handleSearch}
           onEmergency={handleEmergency}
           pinCode={pinCode}
           onPinChange={setPinCode}
@@ -193,7 +184,17 @@ function HomePage() {
           loading={loading}
         />
         <ExampleChips onSelect={(q) => handleSearch(q)} />
-        {data && <AgentThinkingCard steps={data.thinking ?? []} />}
+        {data && (
+          <AgentThinkingCard
+            steps={data.thinking ?? []}
+            meta={{
+              searchTimeMs: data.searchTime,
+              traceId: data.traceId,
+              model: data.model,
+              totalTokens: data.usage?.total_tokens,
+            }}
+          />
+        )}
       </div>
 
       <section id="results" className="mt-10">
@@ -216,14 +217,11 @@ function HomePage() {
         )}
 
         {data && !loading && (
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <Suspense fallback={<div className="h-72 rounded-2xl border bg-slate-50 md:h-[480px]" />}>
+              <Suspense
+                fallback={<div className="h-72 rounded-2xl border bg-slate-50 md:h-[480px]" />}
+              >
                 <SearchResultsMap
                   facilities={facilitiesWithDistance}
                   userLat={userLat}
@@ -233,41 +231,38 @@ function HomePage() {
                 />
               </Suspense>
               <div className="rounded-2xl border border-cyan-200 bg-surface p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-                <AgentResponse markdown={showFullResponse ? translatedResponse || data.response : conciseResponse} />
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-xs text-muted-foreground">
-                    Generated in {(data.searchTime / 1000).toFixed(2)}s · trace{" "}
-                    <code className="rounded bg-cyan-100 px-1.5 py-0.5 text-[11px] dark:bg-slate-800">
-                      {data.traceId}
-                    </code>
-                    {data.model ? ` · ${data.model}` : ""}
-                    {data.usage?.total_tokens ? ` · ${data.usage.total_tokens} tokens` : ""}
-                  </span>
+                <AgentResponse
+                  markdown={
+                    showFullResponse ? translatedResponse || data.response : conciseResponse
+                  }
+                />
+                <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
                   <ListenButton
                     text={(translatedResponse || data.response).replace(/[#*_>`]/g, "")}
-                    lang={effectiveLanguage}
+                    lang={inputLanguage}
                   />
                 </div>
-                {!showFullResponse && conciseResponse !== (translatedResponse || data.response).trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setShowFullResponse(true)}
-                    className="mt-3 text-sm font-medium text-cyan-500 underline"
-                  >
-                    Show full response
-                  </button>
-                )}
+                {!showFullResponse &&
+                  conciseResponse !== (translatedResponse || data.response).trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFullResponse(true)}
+                      className="mt-3 text-sm font-medium text-cyan-500 underline"
+                    >
+                      Show full response
+                    </button>
+                  )}
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {facilitiesWithDistance.map((f) => (
                 <FacilityCard key={f.id} facility={f} traceId={data.traceId} />
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
       </section>
-    </motion.main>
+    </main>
   );
 }

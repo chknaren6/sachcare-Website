@@ -294,7 +294,7 @@ const STATES_WITH_COORDS: Array<{
 const TYPES: MapFacility["type"][] = ["hospital", "clinic", "diagnostic", "pharmacy"];
 
 function seededRandom(seed: number) {
-  let x = Math.sin(seed) * 10000;
+  const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 

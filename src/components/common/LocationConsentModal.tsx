@@ -10,12 +10,8 @@ import { useApp } from "@/components/providers/AppContext";
 import { t } from "@/i18n";
 
 export function LocationConsentModal() {
-  const {
-    locationConsentGiven,
-    setLocationConsentGiven,
-    setUserLocation,
-    effectiveLanguage,
-  } = useApp();
+  const { locationConsentGiven, setLocationConsentGiven, setUserLocation, effectiveLanguage } =
+    useApp();
   const [open, setOpen] = useState(false);
   const copy = t(effectiveLanguage);
 

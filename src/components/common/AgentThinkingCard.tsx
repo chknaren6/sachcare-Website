@@ -9,9 +9,15 @@ const ICONS = [Search, Globe, Database, Shield, Star, Zap];
 
 interface Props {
   steps: ThinkingStep[];
+  meta?: {
+    searchTimeMs?: number;
+    traceId?: string;
+    model?: string;
+    totalTokens?: number;
+  };
 }
 
-export function AgentThinkingCard({ steps }: Props) {
+export function AgentThinkingCard({ steps, meta }: Props) {
   const { showAgentThinking, setShowAgentThinking, effectiveLanguage } = useApp();
   const copy = t(effectiveLanguage);
 
@@ -39,6 +45,13 @@ export function AgentThinkingCard({ steps }: Props) {
           transition={{ duration: 0.25 }}
           className="mt-3 overflow-hidden rounded-2xl border border-cyan-200 bg-cyan-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/50"
         >
+          {!!meta?.traceId && (
+            <p className="mb-3 text-xs text-muted-foreground">
+              Generated in {((meta.searchTimeMs ?? 0) / 1000).toFixed(2)}s · trace {meta.traceId}
+              {meta.model ? ` · ${meta.model}` : ""}
+              {meta.totalTokens ? ` · ${meta.totalTokens} tokens` : ""}
+            </p>
+          )}
           <ol className="space-y-3">
             {steps.map((s, idx) => {
               const Icon = ICONS[idx % ICONS.length];

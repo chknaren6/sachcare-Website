@@ -1,17 +1,13 @@
-import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Siren } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { MicButton } from "./MicButton";
-import { LanguageMarquee } from "./LanguageMarquee";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import { useLanguageDetection } from "@/hooks/useLanguageDetection";
-import { getLangInfo } from "@/lib/languageMap";
 import { useApp } from "@/components/providers/AppContext";
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
-  onSubmit: () => void;
+  onSubmit: (override?: string) => void;
   onEmergency: () => void;
   pinCode: string;
   onPinChange: (pin: string) => void;
@@ -35,61 +31,35 @@ export function SearchBar({
   pinPlaceholder,
   loading,
 }: Props) {
-  const { effectiveLanguage, setDetectedLanguage } = useApp();
-  const detected = useLanguageDetection(value);
+  const { effectiveLanguage } = useApp();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setDetectedLanguage(detected);
-  }, [detected, setDetectedLanguage]);
 
   const sr = useSpeechRecognition(effectiveLanguage, (text) => {
     onChange(text);
-    onSubmit();
+    onSubmit(text);
   });
 
-  // pipe live transcript into the input
+  // pipe transcript into input for visibility
   useEffect(() => {
     if (sr.transcript) onChange(sr.transcript);
   }, [sr.transcript, onChange]);
 
-  const lang = getLangInfo(effectiveLanguage);
-  const showBadge = value.trim().length >= 2;
-
   return (
     <div className="w-full">
-      {/* Infinite language strip just above the search bar */}
-      <LanguageMarquee />
-
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onSubmit();
+          onSubmit(value);
         }}
         className="relative"
       >
-        <AnimatePresence>
-          {showBadge && (
-            <motion.div
-              key={lang.code}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-              className="absolute -top-7 left-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/20"
-            >
-              <span aria-hidden="true">{lang.flag}</span>
-              {lang.name} detected
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Single-line input. Mic LEFT, Search submit RIGHT. */}
         <div className="group relative flex h-14 w-full items-center rounded-full border border-teal-200 bg-surface shadow-[0_4px_24px_-8px_rgba(13,148,136,0.18)] transition-all focus-within:border-primary focus-within:shadow-[0_8px_28px_-6px_rgba(13,148,136,0.28)] dark:border-slate-700 dark:bg-slate-900">
           <div className="pl-2">
             <MicButton
               isListening={sr.isListening}
               isSupported={sr.isSupported}
+              error={sr.error}
               onStart={sr.startListening}
               onStop={sr.stopListening}
             />
@@ -132,9 +102,7 @@ export function SearchBar({
             <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             <input
               value={pinCode}
-              onChange={(e) =>
-                onPinChange(e.target.value.replace(/\D/g, "").slice(0, 6))
-              }
+              onChange={(e) => onPinChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder={pinPlaceholder}
               inputMode="numeric"
               aria-label="Search by PIN code"
@@ -150,6 +118,11 @@ export function SearchBar({
             </button>
           </div>
         </div>
+        {sr.error && (
+          <p className="mt-2 px-4 text-sm text-destructive" role="status">
+            {sr.error}
+          </p>
+        )}
       </form>
     </div>
   );
