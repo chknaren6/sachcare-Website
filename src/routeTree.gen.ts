@@ -9,38 +9,141 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MapRouteImport } from './routes/map'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as DesertsRouteImport } from './routes/deserts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiMapDataRouteImport } from './routes/api/map-data'
+import { Route as ApiDesertAnalysisRouteImport } from './routes/api/desert-analysis'
+import { Route as ApiAskRouteImport } from './routes/api/ask'
 
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesertsRoute = DesertsRouteImport.update({
+  id: '/deserts',
+  path: '/deserts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMapDataRoute = ApiMapDataRouteImport.update({
+  id: '/api/map-data',
+  path: '/api/map-data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDesertAnalysisRoute = ApiDesertAnalysisRouteImport.update({
+  id: '/api/desert-analysis',
+  path: '/api/desert-analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAskRoute = ApiAskRouteImport.update({
+  id: '/api/ask',
+  path: '/api/ask',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/deserts': typeof DesertsRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/map': typeof MapRoute
+  '/api/ask': typeof ApiAskRoute
+  '/api/desert-analysis': typeof ApiDesertAnalysisRoute
+  '/api/map-data': typeof ApiMapDataRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/deserts': typeof DesertsRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/map': typeof MapRoute
+  '/api/ask': typeof ApiAskRoute
+  '/api/desert-analysis': typeof ApiDesertAnalysisRoute
+  '/api/map-data': typeof ApiMapDataRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/deserts': typeof DesertsRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/map': typeof MapRoute
+  '/api/ask': typeof ApiAskRoute
+  '/api/desert-analysis': typeof ApiDesertAnalysisRoute
+  '/api/map-data': typeof ApiMapDataRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/deserts'
+    | '/how-it-works'
+    | '/map'
+    | '/api/ask'
+    | '/api/desert-analysis'
+    | '/api/map-data'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/deserts'
+    | '/how-it-works'
+    | '/map'
+    | '/api/ask'
+    | '/api/desert-analysis'
+    | '/api/map-data'
+  id:
+    | '__root__'
+    | '/'
+    | '/deserts'
+    | '/how-it-works'
+    | '/map'
+    | '/api/ask'
+    | '/api/desert-analysis'
+    | '/api/map-data'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DesertsRoute: typeof DesertsRoute
+  HowItWorksRoute: typeof HowItWorksRoute
+  MapRoute: typeof MapRoute
+  ApiAskRoute: typeof ApiAskRoute
+  ApiDesertAnalysisRoute: typeof ApiDesertAnalysisRoute
+  ApiMapDataRoute: typeof ApiMapDataRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deserts': {
+      id: '/deserts'
+      path: '/deserts'
+      fullPath: '/deserts'
+      preLoaderRoute: typeof DesertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +151,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/map-data': {
+      id: '/api/map-data'
+      path: '/api/map-data'
+      fullPath: '/api/map-data'
+      preLoaderRoute: typeof ApiMapDataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/desert-analysis': {
+      id: '/api/desert-analysis'
+      path: '/api/desert-analysis'
+      fullPath: '/api/desert-analysis'
+      preLoaderRoute: typeof ApiDesertAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ask': {
+      id: '/api/ask'
+      path: '/api/ask'
+      fullPath: '/api/ask'
+      preLoaderRoute: typeof ApiAskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DesertsRoute: DesertsRoute,
+  HowItWorksRoute: HowItWorksRoute,
+  MapRoute: MapRoute,
+  ApiAskRoute: ApiAskRoute,
+  ApiDesertAnalysisRoute: ApiDesertAnalysisRoute,
+  ApiMapDataRoute: ApiMapDataRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
