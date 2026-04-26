@@ -207,6 +207,9 @@
 .leaflet-container {
   background: #cbeef3;
   font-family: var(--font-sans);
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
 }
 .dark .leaflet-container {
   background: #0c1623;

@@ -7,11 +7,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { LANGUAGES } from "@/lib/languageMap";
 import { useApp } from "@/components/providers/AppContext";
+import { UI_LANGUAGES } from "@/i18n";
 
 export function LanguageSwitcher() {
-  const { effectiveLanguage, setLanguageOverride } = useApp();
+  const { uiLanguage, setUiLanguage } = useApp();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -23,18 +23,13 @@ export function LanguageSwitcher() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Interface language</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => setLanguageOverride(null)}>
-          Auto-detect
-        </DropdownMenuItem>
-        {LANGUAGES.map((l) => (
+        {UI_LANGUAGES.map((l) => (
           <DropdownMenuItem
             key={l.code}
-            onSelect={() => setLanguageOverride(l.code)}
-            className={effectiveLanguage === l.code ? "bg-cyan-100 dark:bg-slate-800" : ""}
+            onSelect={() => setUiLanguage(l.code)}
+            className={uiLanguage === l.code ? "bg-cyan-100 dark:bg-slate-800" : ""}
           >
-            <span className="mr-2">{l.flag}</span>
-            <span className="font-medium">{l.nativeName}</span>
-            <span className="ml-auto text-xs text-muted-foreground">{l.name}</span>
+            <span className="font-medium">{l.label}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

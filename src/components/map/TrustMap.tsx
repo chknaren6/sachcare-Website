@@ -1,6 +1,4 @@
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
-import L from "leaflet";
+import { useEffect, useMemo, useState } from "react";
 import type { MapFacility } from "@/types";
 
 interface Props {
@@ -14,24 +12,22 @@ function colorForTrust(t: number) {
   return "#EF4444";
 }
 
-function makeIcon(score: number) {
-  return L.divIcon({
-    className: "",
-    html: `<div class="sc-marker" style="background:${colorForTrust(score)}">${score}</div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-  });
-}
-
 export default function TrustMap({ facilities, showDeserts }: Props) {
-  // Fix default leaflet icon URLs (only relevant if we ever fall back to default markers)
+  const [leafletLib, setLeafletLib] = useState<null | typeof import("leaflet")>(null);
+  const [leafletUi, setLeafletUi] = useState<null | typeof import("react-leaflet")>(null);
+
   useEffect(() => {
-    delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-      iconUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png",
-      shadowUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
+    if (typeof window === "undefined") return;
+    void Promise.all([import("leaflet"), import("react-leaflet")]).then(([leaflet, ui]) => {
+      delete (leaflet.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+      leaflet.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+      setLeafletLib(leaflet);
+      setLeafletUi(ui);
     });
   }, []);
 
@@ -51,6 +47,19 @@ export default function TrustMap({ facilities, showDeserts }: Props) {
       })
       .filter((x): x is { state: string; lat: number; lon: number; avg: number } => x !== null);
   }, [facilities, showDeserts]);
+
+  if (!leafletLib || !leafletUi) {
+    return <div className="h-full w-full bg-cyan-50 dark:bg-slate-900" />;
+  }
+
+  const { MapContainer, TileLayer, Marker, Popup, Circle } = leafletUi;
+  const makeIcon = (score: number) =>
+    leafletLib.divIcon({
+      className: "",
+      html: `<div class="sc-marker" style="background:${colorForTrust(score)}">${score}</div>`,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19],
+    });
 
   return (
     <MapContainer

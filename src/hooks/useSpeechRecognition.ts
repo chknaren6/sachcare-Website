@@ -26,7 +26,7 @@ function getCtor(): SRConstructor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export function useSpeechRecognition(lang: string) {
+export function useSpeechRecognition(lang: string, onFinalTranscript?: (text: string) => void) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -47,11 +47,12 @@ export function useSpeechRecognition(lang: string) {
       const rec = new Ctor();
       rec.lang = lang;
       rec.continuous = false;
-      rec.interimResults = true;
+      rec.interimResults = false;
       rec.onresult = (ev) => {
         const last = ev.results[ev.results.length - 1];
-        const text = last[0].transcript;
+        const text = (last[0].transcript ?? "").trim();
         setTranscript(text);
+        if (text) onFinalTranscript?.(text);
       };
       rec.onerror = () => {
         setError("Recognition error");

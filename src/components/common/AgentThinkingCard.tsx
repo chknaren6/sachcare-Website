@@ -3,6 +3,7 @@ import { Search, Database, Shield, Star, Zap, ChevronDown, Globe } from "lucide-
 import { Switch } from "@/components/ui/switch";
 import { useApp } from "@/components/providers/AppContext";
 import type { ThinkingStep } from "@/types";
+import { t } from "@/i18n";
 
 const ICONS = [Search, Globe, Database, Shield, Star, Zap];
 
@@ -11,7 +12,8 @@ interface Props {
 }
 
 export function AgentThinkingCard({ steps }: Props) {
-  const { showAgentThinking, setShowAgentThinking } = useApp();
+  const { showAgentThinking, setShowAgentThinking, effectiveLanguage } = useApp();
+  const copy = t(effectiveLanguage);
 
   return (
     <div className="mt-4">
@@ -21,7 +23,7 @@ export function AgentThinkingCard({ steps }: Props) {
           onCheckedChange={setShowAgentThinking}
           aria-label="Show agent thinking"
         />
-        <span>Show Agent Thinking</span>
+        <span>{copy.thinkingToggle}</span>
         <ChevronDown
           className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
             showAgentThinking ? "rotate-180" : ""
@@ -67,6 +69,11 @@ export function AgentThinkingCard({ steps }: Props) {
             })}
           </ol>
         </motion.div>
+      )}
+      {showAgentThinking && steps.length === 0 && (
+        <div className="mt-3 rounded-xl border border-dashed p-3 text-sm text-muted-foreground">
+          Thinking trace coming soon.
+        </div>
       )}
     </div>
   );

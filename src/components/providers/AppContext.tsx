@@ -8,18 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import type { Facility } from "@/types";
+import type { UiLanguage } from "@/i18n";
 
 interface AppState {
   detectedLanguage: string;
-  userLanguageOverride: string | null;
-  effectiveLanguage: string;
+  uiLanguage: UiLanguage;
+  effectiveLanguage: UiLanguage;
   setDetectedLanguage: (lang: string) => void;
-  setLanguageOverride: (lang: string | null) => void;
+  setUiLanguage: (lang: UiLanguage) => void;
 
   userLat: number | null;
   userLon: number | null;
-  locationGranted: boolean;
+  locationConsentGiven: boolean;
   setUserLocation: (lat: number, lon: number) => void;
+  setLocationConsentGiven: (v: boolean) => void;
 
   lastQuery: string;
   lastResults: Facility[];
@@ -39,20 +41,21 @@ const Ctx = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [detectedLanguage, setDetectedLanguage] = useState("en-IN");
-  const [userLanguageOverride, setLanguageOverride] = useState<string | null>(null);
+  const [uiLanguage, setUiLanguageState] = useState<UiLanguage>("en-IN");
   const [userLat, setLat] = useState<number | null>(null);
   const [userLon, setLon] = useState<number | null>(null);
+  const [locationConsentGiven, setLocationConsentGiven] = useState(false);
   const [lastQuery, setLastQuery] = useState("");
   const [lastResults, setLastResults] = useState<Facility[]>([]);
   const [showAgentThinking, setShowAgentThinking] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Hydrate persisted bits from sessionStorage / localStorage
+  // Hydrate persisted bits from cookie / localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const loc = sessionStorage.getItem("sc_loc");
+      const loc = localStorage.getItem("sc_loc");
       if (loc) {
         const { lat, lon } = JSON.parse(loc);
         if (typeof lat === "number" && typeof lon === "number") {
@@ -60,7 +63,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setLon(lon);
         }
       }
+      const consent = document.cookie.includes("sachcare_location_consent=1");
+      setLocationConsentGiven(consent);
       if (sessionStorage.getItem("sc_banner_dismissed") === "1") setBannerDismissed(true);
+      const savedUiLanguage = localStorage.getItem("sc_ui_lang") as UiLanguage | null;
+      if (savedUiLanguage) setUiLanguageState(savedUiLanguage);
       const t = (localStorage.getItem("sc_theme") as "light" | "dark" | null) ?? "light";
       setTheme(t);
       document.documentElement.classList.toggle("dark", t === "dark");
@@ -73,7 +80,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLat(lat);
     setLon(lon);
     try {
-      sessionStorage.setItem("sc_loc", JSON.stringify({ lat, lon }));
+      localStorage.setItem("sc_loc", JSON.stringify({ lat, lon }));
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const setLocationConsent = useCallback((v: boolean) => {
+    setLocationConsentGiven(v);
+    try {
+      document.cookie = `sachcare_location_consent=${v ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const setUiLanguage = useCallback((lang: UiLanguage) => {
+    setUiLanguageState(lang);
+    try {
+      localStorage.setItem("sc_ui_lang", lang);
     } catch {
       /* noop */
     }
@@ -109,14 +134,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppState>(
     () => ({
       detectedLanguage,
-      userLanguageOverride,
-      effectiveLanguage: userLanguageOverride ?? detectedLanguage ?? "en-IN",
+      uiLanguage,
+      effectiveLanguage: uiLanguage,
       setDetectedLanguage,
-      setLanguageOverride,
+      setUiLanguage,
       userLat,
       userLon,
-      locationGranted: userLat !== null && userLon !== null,
+      locationConsentGiven,
       setUserLocation,
+      setLocationConsentGiven: setLocationConsent,
       lastQuery,
       lastResults,
       setSearchResults,
@@ -129,15 +155,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       detectedLanguage,
-      userLanguageOverride,
+      uiLanguage,
       userLat,
       userLon,
+      locationConsentGiven,
       lastQuery,
       lastResults,
       showAgentThinking,
       bannerDismissed,
       theme,
       setUserLocation,
+      setLocationConsent,
+      setUiLanguage,
       setSearchResults,
       dismissBanner,
       toggleTheme,

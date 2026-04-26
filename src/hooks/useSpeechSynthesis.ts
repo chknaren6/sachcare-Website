@@ -25,8 +25,12 @@ export function useSpeechSynthesis() {
       voices.find((v) => v.lang === langCode) ??
       voices.find((v) => v.lang.startsWith(langPrefix)) ??
       voices[0];
-    if (match) u.voice = match;
-    u.lang = langCode;
+    if (match) {
+      u.voice = match;
+      u.lang = match.lang;
+    } else {
+      u.lang = langCode.startsWith("en") ? "en-US" : langCode;
+    }
     u.rate = 0.95;
     u.pitch = 1;
     u.volume = 1;

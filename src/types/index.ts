@@ -37,6 +37,13 @@ export interface AskResponse {
   queryLanguage: string;
   traceId: string;
   searchTime: number;
+  model?: string;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  llmRaw?: unknown;
 }
 
 export interface MapFacility {

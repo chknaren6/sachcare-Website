@@ -5,6 +5,8 @@ import { ContradictionAlert } from "./ContradictionAlert";
 import { MLflowModal } from "./MLflowModal";
 import { DistanceBadge } from "@/components/common/DistanceBadge";
 import type { Facility } from "@/types";
+import { t } from "@/i18n";
+import { useApp } from "@/components/providers/AppContext";
 
 interface Props {
   facility: Facility;
@@ -17,6 +19,10 @@ const item = {
 };
 
 export function FacilityCard({ facility, traceId }: Props) {
+  const { effectiveLanguage } = useApp();
+  const copy = t(effectiveLanguage);
+  const shareText = `${facility.name}, ${facility.city}. Phone: ${facility.phone}. Trust Score ${facility.trustScore}/100.`;
+
   return (
     <motion.article
       variants={item}
@@ -44,7 +50,7 @@ export function FacilityCard({ facility, traceId }: Props) {
           className="inline-flex items-center gap-1 font-medium text-cyan-400 underline-offset-2 hover:underline"
         >
           <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-          {facility.phone}
+          {copy.callButton}: {facility.phone}
         </a>
         {typeof facility.distance === "number" && <DistanceBadge km={facility.distance} />}
         <ContradictionAlert items={facility.contradictions} />
@@ -55,7 +61,30 @@ export function FacilityCard({ facility, traceId }: Props) {
           Sources: {facility.sources.slice(0, 2).join(", ")}
           {facility.sources.length > 2 ? "…" : ""}
         </span>
-        <MLflowModal facility={facility} traceId={traceId} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              navigator.share?.({ text: shareText }) ??
+              window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank")
+            }
+            className="rounded-md border px-2 py-1"
+          >
+            {copy.shareButton}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const key = "sc_reports";
+              const current = JSON.parse(localStorage.getItem(key) ?? "[]") as unknown[];
+              localStorage.setItem(key, JSON.stringify([...current, { facility: facility.id, at: Date.now() }]));
+            }}
+            className="rounded-md border px-2 py-1"
+          >
+            {copy.reportButton}
+          </button>
+          <MLflowModal facility={facility} traceId={traceId} />
+        </div>
       </div>
     </motion.article>
   );
