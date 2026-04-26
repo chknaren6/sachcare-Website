@@ -127,9 +127,9 @@ export function SearchBar({
             {sosLabel}
           </button>
 
-          {/* Pin-code-only search — compact pill input */}
+          {/* Pin-code-only search — wider pill input */}
           <div className="ml-auto inline-flex h-10 items-center overflow-hidden rounded-full border border-teal-200 bg-surface pl-3 dark:border-slate-700 dark:bg-slate-900">
-            <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
+            <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             <input
               value={pinCode}
               onChange={(e) =>
@@ -138,13 +138,13 @@ export function SearchBar({
               placeholder={pinPlaceholder}
               inputMode="numeric"
               aria-label="Search by PIN code"
-              className="h-full w-32 bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground"
+              className="h-full w-52 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground sm:w-64"
             />
             <button
               type="button"
               onClick={onPinSubmit}
               disabled={pinCode.length !== 6}
-              className="h-full rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-teal-600 disabled:opacity-50"
+              className="h-full rounded-full bg-primary px-5 text-xs font-semibold text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-50"
             >
               Go
             </button>
